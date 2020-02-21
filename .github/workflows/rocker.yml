@@ -11,7 +11,7 @@ jobs:
           Rscript -e "remotes::install_deps(dependencies = TRUE)"
       - name: Track Data
         run: |-
-          Rscript -f data-tracker.R
+          Rscript data-tracker.R
 
 ## remarkably(?), we can use the standard checkout action, actions/checkout@v1
 ## even inside this Docker container.

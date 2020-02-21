@@ -19,7 +19,7 @@ jobs:
           Rscript -e "remotes::install_deps(dependencies = TRUE, repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
       - name: Data tracker
         run: |-
-          Rscript -f data-tracker.R
+          Rscript data-tracker.R
       - name: Commit results
         run: |
           git commit data -m 'Update data' || echo "No changes to commit"
