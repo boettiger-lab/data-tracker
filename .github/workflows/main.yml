@@ -22,6 +22,6 @@ jobs:
           Rscript data-tracker.R
       - name: Commit results
         run: |
-          git commit data -m 'Update data' || echo "No changes to commit"
+          git commit data/* -m 'Update data' || echo "No changes to commit"
           git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"    
 
