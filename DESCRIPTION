@@ -1,4 +1,4 @@
 Package: compendium
 Version: 0.1.0
 Imports: contenturi
-Remotes: cboettig/contenturi
+Remotes: cboettig/contenturi@drop-type
