@@ -5,11 +5,6 @@ jobs:
     runs-on: ubuntu-latest
     container: 
       image: rocker/tidyverse
-      env: 
-        - secrets.GITHUB_TOKEN
-        - github.repository
-        - github.actor
-        - github.ref
     steps:
       - uses: actions/checkout@v1
       - name: Install dependencies
