@@ -2,8 +2,7 @@ name: Data Tracker - Docker
 on: 
   schedule:
     - cron: '0 0 * * 0'
-  push:
-    paths: *
+
 jobs:
   my_job: 
     runs-on: ubuntu-latest
