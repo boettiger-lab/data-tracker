@@ -15,17 +15,24 @@ jobs:
       - uses: actions/checkout@v1
       - name: Install dependencies
         run: Rscript -e "remotes::install_deps(dependencies = TRUE)"
+      - name: git config
+        run: |
+          git config user.name data-robot
+          git config user.email data-robot
       - name: Track Data
         run: Rscript data-tracker.R
-      - name: Commit results
+      - name: Upload Data Cache
         run: |
-          git config user.name ${{github.actor}}
-          git config user.email ${{github.actor}}
-          git add data/
-          git commit data/* -m 'Update data [ci skip]' || echo "No changes to commit"
+          git add data/*/*
+          git commit -m 'Update data [ci skip]' || echo "No changes to commit"
           git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"    
-      - name: Register Data
+      - name: Register Data URLs
         run: Rscript register.R
+      - name: Upload local registry
+        run: |
+          git add data/registry.tsv.gz
+          git commit -m 'Update registry [ci skip]' || echo "No changes to commit"
+          git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"    
 
 ## remarkably(?), we can use the standard checkout action, actions/checkout@v1
 ## even inside this Docker container.
