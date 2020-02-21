@@ -2,7 +2,7 @@ name: Data Tracker - Docker
 on:
   push:
     branches:
-      - 'test'
+      - 'master'
   schedule:
     - cron: '0 0 * * 0' # Weekly, Sunday midnight
 
