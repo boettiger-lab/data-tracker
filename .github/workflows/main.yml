@@ -1,4 +1,4 @@
-on: push
+on: [never]
       
 name: Update Data
 
