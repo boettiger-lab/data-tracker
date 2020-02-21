@@ -60,4 +60,4 @@ query("hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec7
       c("https://hash-archive.org", "data/"))
 ```
 
-Note that the query reports sightings of this content at the ftp address, our published git versions, and the local cahce, each with timestamps.
+Note that the query reports sightings of this content at the ftp address, our published git versions, and the local cache, each with timestamps.

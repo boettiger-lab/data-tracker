@@ -47,10 +47,11 @@ library(contenturi)
 ``` r
 ## look up by URL in the local registry
 query("ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt", "data/")
-#> # A tibble: 1 x 3
+#> # A tibble: 2 x 3
 #>   identifier                         source                  date               
 #>   <chr>                              <chr>                   <dttm>             
 #> 1 hash://sha256/17b81c3c1c4a57e3037… ftp://aftp.cmdl.noaa.g… 2020-02-21 20:20:35
+#> 2 hash://sha256/17b81c3c1c4a57e3037… ftp://aftp.cmdl.noaa.g… 2020-02-21 20:53:30
 ```
 
 ``` r
@@ -62,18 +63,27 @@ query("hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec7
 #> 2 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
 #> 3 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
 #> 4 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
+#> 5 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
+#> 6 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
+#> 7 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
 #>                                                                                                                                 source
 #> 1 https://github.com/boettiger-lab/data-tracker/raw/master/data/17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
 #> 2                                                                          ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt
 #> 3                                                         data//17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
 #> 4 https://github.com/boettiger-lab/data-tracker/raw/master/data/17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
+#> 5                                                                          ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt
+#> 6                                                         data//17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
+#> 7 https://github.com/boettiger-lab/data-tracker/raw/master/data/17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
 #>                  date
 #> 1 2020-02-21 19:18:16
 #> 2 2020-02-21 20:20:35
 #> 3 2020-02-21 20:20:35
 #> 4 2020-02-21 20:29:24
+#> 5 2020-02-21 20:53:30
+#> 6 2020-02-21 20:53:30
+#> 7 2020-02-21 20:53:32
 ```
 
 Note that the query reports sightings of this content at the ftp
-address, our published git versions, and the local cahce, each with
+address, our published git versions, and the local cache, each with
 timestamps.
