@@ -1,5 +1,6 @@
-on: [push]
-      
+on:
+  schedule:
+    - cron: '0 0 1 1 *' # Annual, because this is a duplicate of rocker-based one anyway
 name: Update Data
 
 jobs:
