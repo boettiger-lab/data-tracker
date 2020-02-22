@@ -25,8 +25,8 @@ jobs:
         run: |
           git config user.name ${{github.actor}}
           git config user.email ${{github.actor}}
-          git add data/
-          git commit data/* -m 'Update data' || echo "No changes to commit"
+          git add store
+          git commit -m 'Update data' || echo "No changes to commit"
           git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"    
       - name: Register Data
         run: Rscript register.R
