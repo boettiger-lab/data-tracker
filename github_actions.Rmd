@@ -1,0 +1,42 @@
+---
+title: "Automated Data Tracking with GitHub Actions"
+output: html_document
+---
+
+
+
+
+The [Action](.github/workflows/rocker.yml) file has 4 steps:
+
+1. `contenturi::store(url)`.  Caches the content to local `data/` directory and updates the local registry.
+2. `git push` Commits the `data` dir and pushes it to GitHub, making this cache accessible at a public URL
+3. `contenturi::register()`.  Register those GitHub URLs in both <https://hash-archive.org> and the local registry.
+4. `git push` Commit and push the local `registry.tsv.gz`
+
+Obviously this workflow could be adapted to publish the local content store and local registry somewhere else, (GitHub Release,
+AWS S3 bucket, etc) rather than committing the data file directly to GitHub.  That is just a simple proof of principle. 
+
+
+## Application
+
+We can now query either the local or a remote registry like <hash-archive.org> by either the URL or the content identifier of
+a specific version of interest, e.g.:
+
+```{r}
+library(contenturi)
+```
+
+
+```{r}
+## look up by URL in the local registry
+query("ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt", "data/")
+```
+
+
+```{r}
+## look up by hash in the local & remote registries
+query("hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb",
+      c("https://hash-archive.org", "data/"))
+```
+
+Note that the query reports sightings of this content at the ftp address, our published git versions, and the local cache, each with timestamps.
