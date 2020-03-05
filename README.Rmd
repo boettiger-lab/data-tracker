@@ -53,18 +53,28 @@ library(gert) # to push to github
 First, we store a snapshot of the data to the local `store/` directory.  
 
 ```{r}
-id <- store("ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_weekly_mlo.txt", "store/")
+Sys.setenv("CONTENTURI_HOME" = "store/")
+id <- store("ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_weekly_mlo.txt")
 id
 ```
 
-This is enough for local use.  We can now refer to this data in our code:
+This is enough for local use. We can now access this specific data file by this content identifier:
+
+```{r}
+local_copy <- retrieve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
+
+```
+
+And here it is:
 
 ```{r}
 library(readr)
 library(ggplot2)
 
 
-co2 <- read_table2(retrieve(id, "store/"), 
+
+
+co2 <- read_table2(local_copy, 
                 ## data file doesn't have column names
                 comment = "#",
                 col_names = c("yr", "mo", "day", "decimal_date", "co2_ppm", 
@@ -76,35 +86,30 @@ ggplot(co2, aes(decimal_date, co2_ppm)) + geom_line()
 ```
 
 
-
-Of course it is no good just having the data sitting in a local storage of some virtual machine that's about to dissappear.  We need to publish the store somewhere.  This could be anywhere we have a URL. 
-For simplicity, we will merely push it to GitHub. 
+While we can access our data by this content identifier, so far our snapshot copy exists
+only on our local machine. To make it a bit more accessible, let's publish it to a public
+URL somewhere. For simplicity, we will merely push it to this GitHub repo: 
 
 ```{r}
 library(gert)
 git_add("store/")
-git_commit_all("adding data", author = Sys.getenv("github.actor"))
-git_push()
+git_commit_all("adding data")
+git_push(password = Sys.getenv("secrets.GITHUB_TOKEN"))
 ```
 
-```{r}
-git_push(paste0("https://", 
-                Sys.getenv("github.actor"), ":", 
-                Sys.getenv("secrets.GITHUB_TOKEN"),
-                "@github.com/",
-                Sys.getenv("github.repository"),
-                ".git HEAD:",
-                Sys.getenv("github.ref")
-                ))
-```
+Now that the data is on a public GitHub repo, we can access it by GitHub URL.  However, GitHub URLs aren't forever -- our repo could move or be deleted, GitHub Inc could shut down, etc. A GitHub URL (or any URL) makes a poor 'permanent identifier' for our content, so we don't want to hard-code that location.  But it does make a good practical location for the moment.  So, our trick is to use the content identifier in our code, but be able to "resolve" that identifier to the GitHub URL, much like we "resolve" a DOI to a landing page in some data repository.  At it's core, a DOI is just a redirect to another webpage.  
 
-The data is on a public GitHub repo, so we can access it by URL.  Let's record those URLs in a local registry.
+To allow our content identifier to act the same way, we create an entry in a 'content registry': a map of content identifiers to locations.  
+
+
+Let's record those URLs in a local registry.
 
 ```{r}
-urls <- paste0("https://github.com/boettiger-lab/data-tracker/raw/master/",
-               list.files("store", full.names = TRUE, recursive = TRUE))
+url <- paste0("https://github.com/boettiger-lab/data-tracker/raw/master/",
+                fs::path_rel(retrieve(id), "."))
 
-contenturi::register(urls, "store/")
+id2 <- contenturi::register(url)
+identical(id, id2)
 ```
 
 
