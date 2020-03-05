@@ -16,11 +16,14 @@ practical to mint a DOI for these sources every time we make a forecast
 from them (see [why not just DOIs?](#DOIs?)). This repository outlines a
 simple alternative approach.
 
-We want an automated job that: - watches the URL - computes a
-*identifier* for each unique copy of the data it finds (or is used in
-making a *forecast*) - archives each new copy of the data that it finds
-- Allows us to retrieve a the precise copy of that data using its
-*identifier*.
+We want an automated job that:
+
+  - watches the URL
+  - computes a *identifier* for each unique copy of the data it finds
+    (or is used in making a *forecast*)
+  - archives each new copy of the data that it finds
+  - Allows us to retrieve a the precise copy of that data using its
+    *identifier*.
 
 ## Approach
 
@@ -194,10 +197,11 @@ explicitly:
 ``` r
 query("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9",
       registries = "https://hash-archive.org")
-#> # A tibble: 1 x 3
+#> # A tibble: 2 x 3
 #>   identifier                     source                      date               
 #>   <chr>                          <chr>                       <dttm>             
-#> 1 hash://sha256/1dec4592238cb66… https://github.com/boettig… 2020-03-05 03:35:51
+#> 1 hash://sha256/1dec4592238cb66… https://archive.softwarehe… 2020-03-05 06:34:33
+#> 2 hash://sha256/1dec4592238cb66… https://github.com/boettig… 2020-03-05 03:35:51
 ```
 
 Note that `query()` just returns the registry information, it hasn’t
@@ -222,5 +226,29 @@ need not rely on the adoption of a specific protocol and a specific
 software product (like `git`, `dat`, or `IPFS`) to make this work. For
 example, the Software Heritage Project has just completed a snapshot of
 all public data on GitHub and many other open source code repositories,
-and [exposes an API]() that can query for any content by these same
-sha256 hashes.
+and [exposes an
+API](https://docs.softwareheritage.org/devel/swh-web/uri-scheme-browse-content.html)
+that can query for any content by these same sha256 hashes. We can also
+ping the API to snapshot our repository. Notably, SoftwareHeritage goes
+beyond the approach taken by hash-archive.org, because it stores (and
+returns) a archive copy of all the content it indexes.
+
+For example, here is a Software Heritage API request for the same
+content we have been using:
+
+``` r
+swh_url <-
+"https://archive.softwareheritage.org/browse/content/sha256:1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9/raw/"
+
+## prove this is the same content
+content_uri(swh_url)
+#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
+```
+
+So just for fun (and redundant storage), let’s go register this address
+to \<hash-archive.org\> as well:
+
+``` r
+register(swh_url)
+#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
+```
