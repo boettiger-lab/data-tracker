@@ -97,7 +97,7 @@ git_commit_all("adding data")
 git_push()
 ```
 
-Now that the data is on a public GitHub repo, we can access it by GitHub URL.  However, GitHub URLs aren't forever -- our repo could move or be deleted, GitHub Inc could shut down, etc. A GitHub URL (or any URL) makes a poor 'permanent identifier' for our content, so we don't want to hard-code that location.  But it does make a good practical location for the moment.  So, our trick is to use the content identifier in our code, but be able to "resolve" that identifier to the GitHub URL, much like we "resolve" a DOI to a landing page in some data repository.  At it's core, a DOI is just a redirect to another webpage.  
+Now that the data is on a public GitHub repo, we can access it by GitHub URL.  However, GitHub URLs aren't forever -- our repo could move or be deleted, GitHub Inc could shut down, etc. A GitHub URL (or any URL) makes a poor 'permanent identifier' for our content, so we don't want to hard-code that location.  But it does make a good practical location for the moment.  So, our trick is to use the content identifier in our code, but be able to "resolve" that identifier to the GitHub URL, much like we "resolve" a DOI to a landing page in some data repository.  At its core, a DOI is just a redirect to another webpage.  
 
 To allow our content identifier to act the same way, we create an entry in a 'content registry': a map of content identifiers to locations.  
 
@@ -117,7 +117,7 @@ identical(id, id2)
 ```
 
 
-Now that our data is in the registry, we can resolve the identifier.  Whereas `retrieve()` only looks in our local store, `resolve()` is smarter. It will first check for this content in the local store. If it finds a local copy, it gives us the location, no need to download. To prove we got the content we requested, we can manually re-generate it's content identifier (this the same as doing the `sha256sum` outside of R):
+Now that our data is in the registry, we can resolve the identifier.  Whereas `retrieve()` only looks in our local store, `resolve()` is smarter. It will first check for this content in the local store. If it finds a local copy, it gives us the location, no need to download. To prove we got the content we requested, we can manually re-generate its content identifier (this the same as doing the `sha256sum` outside of R):
 
 
 ```{r}
@@ -146,7 +146,7 @@ If we wanted more assurance, we could upload this same file elsewhere on the int
 
 These functions involve no magic and very little code to implement.  The core mechanism isn't anything specific to R, all it needs is a simple little table (a "registry") that maps content identifiers to URLs (and/or local disk paths). With that table in hand, you could do `resolve()` pretty much manually.  Unfortunately, this also means that these functions have little public utility without access to a public registry.  
 
-Fortunately, such things already exist.  A public registry acts like the central <https://doi.org> system, redirecting DOIs to URLs.  <https://hash-archive.org> provides a similar service for content identifiers.  Our `register()` command did not only register the URL in the local archive, but also sent the URL to the <https://hash-archive.org> by default.  That server indpendently computed the sha256sum of the content and stored this information (just the map of identifier to URL, not the actual content) in it's own registry.  We can confirm this by querying against <https://hash-archive.org> registry explicitly:
+Fortunately, such things already exist.  A public registry acts like the central <https://doi.org> system, redirecting DOIs to URLs.  <https://hash-archive.org> provides a similar service for content identifiers.  Our `register()` command did not only register the URL in the local archive, but also sent the URL to the <https://hash-archive.org> by default.  That server indpendently computed the sha256sum of the content and stored this information (just the map of identifier to URL, not the actual content) in its own registry.  We can confirm this by querying against <https://hash-archive.org> registry explicitly:
 
 
 
