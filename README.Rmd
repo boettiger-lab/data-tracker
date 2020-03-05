@@ -1,7 +1,7 @@
 ---
 output: 
   github_document:
-    table_df: tibble
+    df_print: tibble
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -48,7 +48,6 @@ store the content found at a URL of a possibly dynamic data resource.
 
 ```{r}
 library(contenturi) # remotes::install_github("cboettig/contenturi")
-library(gert) # to push to github
 ```
 
 
@@ -72,9 +71,6 @@ And here it is:
 ```{r}
 library(readr)
 library(ggplot2)
-
-
-
 
 co2 <- read_table2(local_copy, 
                 ## data file doesn't have column names

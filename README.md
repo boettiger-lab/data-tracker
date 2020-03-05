@@ -8,82 +8,236 @@ data sources
 
 ## Goal
 
-Data at a given URL may change periodically. We want an automated job
-that watches the URL and archives each new copy of the data that it
-finds, noting the timestamp and file hash. We want the archive copies to
-be publically discoverable.
+Data at a given URL may change periodically or even continuously. This
+is particularly relevant with data we might use for **forecasting**,
+such as environmental data from NOAA or NASA, or ecological data from
+NEON. Such data sources rarely have DOIs, and it usually is not
+practical to mint a DOI for these sources every time we make a forecast
+from them (see [why not just DOIs?](#DOIs?)). This repository outlines a
+simple alternative approach.
 
-## Process
+We want an automated job that: - watches the URL - computes a
+*identifier* for each unique copy of the data it finds (or is used in
+making a *forecast*) - archives each new copy of the data that it finds
+- Allows us to retrieve a the precise copy of that data using its
+*identifier*.
+
+## Approach
+
+Rather than using DOIs for this identifier, we will use simple content
+hash sums as identifiers, as proposed by Ben Trask, Jorrit Poelen, and
+others. (Note that approach is different than that of `git`, `dat`,
+`IPFS` and other content-based systems in that it’s way simpler – no
+special software or complex protocol which generates “salted” hashes.
+Our identifier is just the `sha256sum` of the raw data files. A few
+simple helper utilities for doing this in R are provided in the
+experimental R package,
+[contenturi](https://github.com/cboettig/contenturi).
+
+## Automated Example Pipeline
+
+To illustrate this, we’ll consider the simple case of forecasting using
+the [classic Mauno Loa CO2
+data](https://www.esrl.noaa.gov/gmd/ccgg/trends/data.html) (the longest
+record of direct measurements of CO2 in the atmosphere). Weekly averages
+are published to
+<ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_weekly_mlo.txt>, and
+as noted in the data file, data for the last several months [*may be
+subject to
+revision*](https://www.esrl.noaa.gov/gmd/ccgg/trends/trends_log.html)
+(hence we cannot necessarily get earlier versions of the actual data
+merely by dropping the latest rows from the latest version.) This widely
+used and frequently updated dataset does not appear to have been
+assigned a DOI. Here, we grab weekly snapshots of the data and register
+permanent content-based identifiers.
 
 This repository uses a scheduled CRON job on [GitHub
 Actions](https://github.com/boettiger-lab/data-tracker/actions/) to
 store the content found at a URL of a possibly dynamic data resource.
 
-The [Action](.github/workflows/rocker.yml) file has 4 steps:
-
-1.  `contenturi::store(url)`. Caches the content to local `data/`
-    directory and updates the local registry.
-2.  `git push` Commits the `data` dir and pushes it to GitHub, making
-    this cache accessible at a public URL
-3.  `contenturi::register()`. Register those GitHub URLs in both
-    <https://hash-archive.org> and the local registry.
-4.  `git push` Commit and push the local `registry.tsv.gz`
-
-Obviously this workflow could be adapted to publish the local content
-store and local registry somewhere else, (GitHub Release, AWS S3 bucket,
-etc) rather than committing the data file directly to GitHub. That is
-just a simple proof of principle.
-
-## Application
-
-We can now query either the local or a remote registry like
-\<hash-archive.org\> by either the URL or the content identifier of a
-specific version of interest, e.g.:
-
 ``` r
-library(contenturi)
+library(contenturi) # remotes::install_github("cboettig/contenturi")
+library(gert) # to push to github
+#> Linking to libgit2 v0.26.0, ssh support: YES, https support: NO
+#> Default user: Carl Boettiger <cboettig@gmail.com>
 ```
 
-``` r
-## look up by URL in the local registry
-query("ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt", "data/")
-#> # A tibble: 2 x 3
-#>   identifier                         source                  date               
-#>   <chr>                              <chr>                   <dttm>             
-#> 1 hash://sha256/17b81c3c1c4a57e3037… ftp://aftp.cmdl.noaa.g… 2020-02-21 20:20:35
-#> 2 hash://sha256/17b81c3c1c4a57e3037… ftp://aftp.cmdl.noaa.g… 2020-02-21 20:53:30
-```
+First, we store a snapshot of the data to the local `store/` directory.
 
 ``` r
-## look up by hash in the local & remote registries
-query("hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb",
-      c("https://hash-archive.org", "data/"))
-#>                                                                       identifier
-#> 1 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 2 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 3 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 4 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 5 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 6 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 7 hash://sha256/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#>                                                                                                                                 source
-#> 1 https://github.com/boettiger-lab/data-tracker/raw/master/data/17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 2                                                                          ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt
-#> 3                                                         data//17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 4 https://github.com/boettiger-lab/data-tracker/raw/master/data/17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 5                                                                          ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt
-#> 6                                                         data//17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#> 7 https://github.com/boettiger-lab/data-tracker/raw/master/data/17/b8/17b81c3c1c4a57e30371eaff008625f407116b38b3d679e547ac8fcbec73e1cb
-#>                  date
-#> 1 2020-02-21 19:18:16
-#> 2 2020-02-21 20:20:35
-#> 3 2020-02-21 20:20:35
-#> 4 2020-02-21 20:29:24
-#> 5 2020-02-21 20:53:30
-#> 6 2020-02-21 20:53:30
-#> 7 2020-02-21 20:53:32
+Sys.setenv("CONTENTURI_HOME" = "store/")
+id <- store("ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_weekly_mlo.txt")
+id
+#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
 ```
 
-Note that the query reports sightings of this content at the ftp
-address, our published git versions, and the local cache, each with
-timestamps.
+This is enough for local use. We can now access this specific data file
+by this content
+identifier:
+
+``` r
+local_copy <- retrieve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
+```
+
+And here it is:
+
+``` r
+library(readr)
+library(ggplot2)
+
+
+
+
+co2 <- read_table2(local_copy, 
+                ## data file doesn't have column names
+                comment = "#",
+                col_names = c("yr", "mo", "day", "decimal_date", "co2_ppm", 
+                              "n_days", "yr_ago", "decade_ago", "since_1800"),
+                na = c("-999.99", "-1")) 
+#> Parsed with column specification:
+#> cols(
+#>   yr = col_double(),
+#>   mo = col_double(),
+#>   day = col_double(),
+#>   decimal_date = col_double(),
+#>   co2_ppm = col_double(),
+#>   n_days = col_double(),
+#>   yr_ago = col_double(),
+#>   decade_ago = col_double(),
+#>   since_1800 = col_double()
+#> )
+
+
+ggplot(co2, aes(decimal_date, co2_ppm)) + geom_line()  
+```
+
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+While we can access our data by this content identifier, so far our
+snapshot copy exists only on our local machine. To make it a bit more
+accessible, let’s publish it to a public URL somewhere. For simplicity,
+we will merely push it to this GitHub repo:
+
+``` r
+library(gert)
+git_add("store/")
+git_commit_all("adding data")
+git_push()
+```
+
+Now that the data is on a public GitHub repo, we can access it by GitHub
+URL. However, GitHub URLs aren’t forever – our repo could move or be
+deleted, GitHub Inc could shut down, etc. A GitHub URL (or any URL)
+makes a poor ‘permanent identifier’ for our content, so we don’t want to
+hard-code that location. But it does make a good practical location for
+the moment. So, our trick is to use the content identifier in our code,
+but be able to “resolve” that identifier to the GitHub URL, much like we
+“resolve” a DOI to a landing page in some data repository. At it’s core,
+a DOI is just a redirect to another webpage.
+
+To allow our content identifier to act the same way, we create an entry
+in a ‘content registry’: a map of content identifiers to
+locations.
+
+``` r
+url <- paste0("https://github.com/boettiger-lab/data-tracker/raw/master/",
+                fs::path_rel(retrieve(id), "."))
+
+id2 <- contenturi::register(url)
+```
+
+Registering content also returns the content-identifier. Note that
+because the content at this URL is identical to what we downloaded with
+`store`, the content identifier is also the same:
+
+``` r
+identical(id, id2)
+#> [1] TRUE
+```
+
+Now that our data is in the registry, we can resolve the identifier.
+Whereas `retrieve()` only looks in our local store, `resolve()` is
+smarter. It will first check for this content in the local store. If it
+finds a local copy, it gives us the location, no need to download. To
+prove we got the content we requested, we can manually re-generate it’s
+content identifier (this the same as doing the `sha256sum` outside of
+R):
+
+``` r
+co2_file <- resolve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
+content_uri(co2_file)
+#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
+```
+
+What if it is not available in the local store? Let’s delete the file it
+just found to test it. Now, `resolve` will check the registry for any
+known URLs where this content has been seen, download from the URL, and
+verify the content exactly matches the desired content by comparing
+cryptographic hashes. If it does not match, it will try any other
+registered URLs before failing:
+
+``` r
+fs::file_delete(co2_file)
+co2_file <- resolve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
+
+content_uri(co2_file)
+#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
+```
+
+If we wanted more assurance, we could upload this same file elsewhere on
+the internet, and register those URLs as well. In this way, we have
+created a distributed content store\! We have a permanent identifier for
+our data which we can resolve to get our data file back.
+
+These functions involve no magic and very little code to implement. The
+core mechanism isn’t anything specific to R, all it needs is a simple
+little table (a “registry”) that maps content identifiers to URLs
+(and/or local disk paths). With that table in hand, you could do
+`resolve()` pretty much manually. Unfortunately, this also means that
+these functions have little public utility without access to a public
+registry.
+
+Fortunately, such things already exist. A public registry acts like the
+central <https://doi.org> system, redirecting DOIs to URLs.
+<https://hash-archive.org> provides a similar service for content
+identifiers. Our `register()` command did not only register the URL in
+the local archive, but also sent the URL to the
+<https://hash-archive.org> by default. That server indpendently computed
+the sha256sum of the content and stored this information (just the map
+of identifier to URL, not the actual content) in it’s own registry. We
+can confirm this by querying against <https://hash-archive.org> registry
+explicitly:
+
+``` r
+query("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9",
+      registries = "https://hash-archive.org")
+#> # A tibble: 1 x 3
+#>   identifier                     source                      date               
+#>   <chr>                          <chr>                       <dttm>             
+#> 1 hash://sha256/1dec4592238cb66… https://github.com/boettig… 2020-03-05 03:35:51
+```
+
+Note that `query()` just returns the registry information, it hasn’t
+downoaded the data from the registered URL. `query()` `register()` and
+`resolve()` similarly all work across both a local registry and the
+<https://hash-archive.org> registry by default. By passing either a
+local path or the URL of such a registry to `registeries` argument we
+can restrict any of these functions to use just the registries
+indicated. Thanks to this public registry, any user should be able to
+now access this data file by using the `contenturi::resolve()` function
+on the content identifier, without any need to `store()` or `register()`
+the data from their own machine first.
+
+Of course this also makes <https://hash-archive.org> a weak point of the
+system. However, the real magic of this approach is that we are not tied
+to a single central server. These functions can work across an arbitrary
+number of public registries, where registries are just simple look-up
+tables. Better yet, because the content identifier can be reproducibly
+generated from the content (and only from the content – sha sums are
+cryptographic hashes) using a fast, standard, and popular algorithm, we
+need not rely on the adoption of a specific protocol and a specific
+software product (like `git`, `dat`, or `IPFS`) to make this work. For
+example, the Software Heritage Project has just completed a snapshot of
+all public data on GitHub and many other open source code repositories,
+and [exposes an API]() that can query for any content by these same
+sha256 hashes.
