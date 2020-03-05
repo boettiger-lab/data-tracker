@@ -77,7 +77,8 @@ co2 <- read_table2(local_copy,
                 comment = "#",
                 col_names = c("yr", "mo", "day", "decimal_date", "co2_ppm", 
                               "n_days", "yr_ago", "decade_ago", "since_1800"),
-                na = c("-999.99", "-1")) 
+                na = c("-999.99", "-1"), 
+                col_types = "iiiddiddd") 
 
 
 ggplot(co2, aes(decimal_date, co2_ppm)) + geom_line()  
@@ -133,6 +134,11 @@ co2_file <- resolve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b36
 
 content_uri(co2_file)
 
+```
+
+```{r include = FALSE}
+## put it back in the local store too !
+store(co2_file)
 ```
 
 If we wanted more assurance, we could upload this same file elsewhere on the internet, and register those URLs as well.  In this way, we have created a distributed content store!  We have a permanent identifier for our data which we can resolve to get our data file back.  

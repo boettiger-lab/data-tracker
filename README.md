@@ -57,9 +57,6 @@ store the content found at a URL of a possibly dynamic data resource.
 
 ``` r
 library(contenturi) # remotes::install_github("cboettig/contenturi")
-library(gert) # to push to github
-#> Linking to libgit2 v0.26.0, ssh support: YES, https support: NO
-#> Default user: Carl Boettiger <cboettig@gmail.com>
 ```
 
 First, we store a snapshot of the data to the local `store/` directory.
@@ -85,27 +82,13 @@ And here it is:
 library(readr)
 library(ggplot2)
 
-
-
-
 co2 <- read_table2(local_copy, 
                 ## data file doesn't have column names
                 comment = "#",
                 col_names = c("yr", "mo", "day", "decimal_date", "co2_ppm", 
                               "n_days", "yr_ago", "decade_ago", "since_1800"),
-                na = c("-999.99", "-1")) 
-#> Parsed with column specification:
-#> cols(
-#>   yr = col_double(),
-#>   mo = col_double(),
-#>   day = col_double(),
-#>   decimal_date = col_double(),
-#>   co2_ppm = col_double(),
-#>   n_days = col_double(),
-#>   yr_ago = col_double(),
-#>   decade_ago = col_double(),
-#>   since_1800 = col_double()
-#> )
+                na = c("-999.99", "-1"), 
+                col_types = "iiiddiddd") 
 
 
 ggplot(co2, aes(decimal_date, co2_ppm)) + geom_line()  
