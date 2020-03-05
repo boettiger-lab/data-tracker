@@ -17,15 +17,107 @@ Proof of concept for Content-Identifier Based Registry for streaming data source
 
 ## Goal
 
-Data at a given URL may change periodically.  We want an automated job that watches the URL and archives each
-new copy of the data that it finds, noting the timestamp and file hash.  We want the archive copies to be 
-publically discoverable.  
+Data at a given URL may change periodically or even continuously.  This is particularly relevant with data
+we might use for **forecasting**, such as environmental data from NOAA or NASA, or ecological data from NEON.
+Such data sources rarely have DOIs, and it usually is not practical to mint a DOI for these sources every
+time we make a forecast from them (see [why not just DOIs?](#DOIs?)). This repository outlines a simple
+alternative approach.  
 
 
-## Process
+We want an automated job that:
+- watches the URL
+- computes a *identifier* for each unique copy of the data it finds (or is used in making a *forecast*)
+- archives each new copy of the data that it finds
+- Allows us to retrieve a the precise copy of that data using its *identifier*.
+
+
+## Approach
+
+Rather than using DOIs for this identifier, we will use simple content hash sums as identifiers, as proposed by Ben Trask, Jorrit Poelen, and others.  (Note that approach is different than that of `git`, `dat`, `IPFS` and other content-based systems in that it's way simpler -- no special software or complex protocol which generates "salted" hashes.  Our identifier is just the `sha256sum` of the raw data files.  A few simple helper utilities for doing this in R are provided in the experimental R package, [contenturi](https://github.com/cboettig/contenturi).  
+
+## Automated Example Pipeline
+
+To illustrate this, we'll consider the simple case of forecasting using the [classic Mauno Loa CO2 data](https://www.esrl.noaa.gov/gmd/ccgg/trends/data.html) (the longest record of direct measurements of CO2 in the atmosphere).  Weekly averages are published to  <ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_weekly_mlo.txt>, and as noted in the data file, data for the last several months [*may be subject to revision*](https://www.esrl.noaa.gov/gmd/ccgg/trends/trends_log.html) (hence we cannot necessarily get earlier versions of the actual data merely by dropping the latest rows from the latest version.)  This widely used and frequently updated dataset does not appear to have been assigned a DOI. Here, we grab weekly snapshots of the data and register permanent content-based identifiers.
+
 
 This repository uses a scheduled CRON job on [GitHub Actions](https://github.com/boettiger-lab/data-tracker/actions/) to
 store the content found at a URL of a possibly dynamic data resource.  
+
+
+```{r}
+library(contenturi) # remotes::install_github("cboettig/contenturi")
+library(gert) # to push to github
+```
+
+
+First, we store a snapshot of the data to the local `store/` directory.  
+
+```{r}
+id <- store("ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_weekly_mlo.txt", "store/")
+id
+```
+
+This is enough for local use.  We can now refer to this data in our code:
+
+```{r}
+library(readr)
+library(ggplot2)
+
+
+co2 <- read_table2(retrieve(id, "store/"), 
+                ## data file doesn't have column names
+                comment = "#",
+                col_names = c("yr", "mo", "day", "decimal_date", "co2_ppm", 
+                              "n_days", "yr_ago", "decade_ago", "since_1800"),
+                na = c("-999.99", "-1")) 
+
+
+ggplot(co2, aes(decimal_date, co2_ppm)) + geom_line()  
+```
+
+
+
+Of course it is no good just having the data sitting in a local storage of some virtual machine that's about to dissappear.  We need to publish the store somewhere.  This could be anywhere we have a URL. 
+For simplicity, we will merely push it to GitHub. 
+
+```{r}
+library(gert)
+git_add("store/")
+git_commit_all("adding data", author = Sys.getenv("github.actor"))
+git_push()
+```
+
+```{r}
+git_push(paste0("https://", 
+                Sys.getenv("github.actor"), ":", 
+                Sys.getenv("secrets.GITHUB_TOKEN"),
+                "@github.com/",
+                Sys.getenv("github.repository"),
+                ".git HEAD:",
+                Sys.getenv("github.ref")
+                ))
+```
+
+The data is on a public GitHub repo, so we can access it by URL.  Let's record those URLs in a local registry.
+
+```{r}
+urls <- paste0("https://github.com/boettiger-lab/data-tracker/raw/master/",
+               list.files("store", full.names = TRUE, recursive = TRUE))
+
+contenturi::register(urls, "store/")
+```
+
+
+The real power of this comes in when we register this information in other publicly queriable registeries, like <https://hash-archive.org>:
+
+```{r}
+contenturi::register(urls, "https://hash-archive.org")
+```
+
+
+
+
+
 
 The [Action](.github/workflows/rocker.yml) file has 4 steps:
 
