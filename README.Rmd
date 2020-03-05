@@ -146,7 +146,7 @@ If we wanted more assurance, we could upload this same file elsewhere on the int
 
 These functions involve no magic and very little code to implement.  The core mechanism isn't anything specific to R, all it needs is a simple little table (a "registry") that maps content identifiers to URLs (and/or local disk paths). With that table in hand, you could do `resolve()` pretty much manually.  Unfortunately, this also means that these functions have little public utility without access to a public registry.  
 
-Fortunately, such things already exist.  A public registry acts like the central <https://doi.org> system, redirecting DOIs to URLs.  <https://hash-archive.org> provides a similar service for content identifiers.  Our `register()` command did not only register the URL in the local archive, but also sent the URL to the <https://hash-archive.org> by default.  That server indpendently computed the sha256sum of the content and stored this information (just the map of identifier to URL, not the actual content) in its own registry.  We can confirm this by querying against <https://hash-archive.org> registry explicitly:
+Fortunately, such things already exist.  A public registry acts like the central <https://doi.org> system, redirecting DOIs to URLs.  <https://hash-archive.org> provides a similar service for content identifiers.  Our `register()` command did not only register the URL in the local archive, but also sent the URL to the <https://hash-archive.org> by default.  That server independently computed the sha256sum of the content and stored this information (just the map of identifier to URL, not the actual content) in its own registry.  We can confirm this by querying against <https://hash-archive.org> registry explicitly:
 
 
 
