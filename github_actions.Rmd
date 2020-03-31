@@ -8,9 +8,9 @@ output: html_document
 
 The [Action](.github/workflows/rocker.yml) file has 4 steps:
 
-1. `contenturi::store(url)`.  Caches the content to local `data/` directory and updates the local registry.
+1. `contentid::store(url)`.  Caches the content to local `data/` directory and updates the local registry.
 2. `git push` Commits the `data` dir and pushes it to GitHub, making this cache accessible at a public URL
-3. `contenturi::register()`.  Register those GitHub URLs in both <https://hash-archive.org> and the local registry.
+3. `contentid::register()`.  Register those GitHub URLs in both <https://hash-archive.org> and the local registry.
 4. `git push` Commit and push the local `registry.tsv.gz`
 
 Obviously this workflow could be adapted to publish the local content store and local registry somewhere else, (GitHub Release,
@@ -23,7 +23,7 @@ We can now query either the local or a remote registry like <hash-archive.org> b
 a specific version of interest, e.g.:
 
 ```{r}
-library(contenturi)
+library(contentid)
 ```
 
 

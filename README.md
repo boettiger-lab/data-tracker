@@ -35,7 +35,7 @@ special software or complex protocol which generates “salted” hashes.
 Our identifier is just the `sha256sum` of the raw data files. A few
 simple helper utilities for doing this in R are provided in the
 experimental R package,
-[contenturi](https://github.com/cboettig/contenturi).
+[contentid](https://github.com/cboettig/contentid).
 
 ## Automated Example Pipeline
 
@@ -59,16 +59,16 @@ Actions](https://github.com/boettiger-lab/data-tracker/actions/) to
 store the content found at a URL of a possibly dynamic data resource.
 
 ``` r
-library(contenturi) # remotes::install_github("cboettig/contenturi")
+library(contentid) # remotes::install_github("cboettig/contentid")
 ```
 
 First, we store a snapshot of the data to the local `store/` directory.
 
 ``` r
-Sys.setenv("CONTENTURI_HOME" = "store/")
+Sys.setenv("CONTENTID_HOME" = "store/")
 id <- store("ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_weekly_mlo.txt")
 id
-#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
+#> [1] "hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5"
 ```
 
 This is enough for local use. We can now access this specific data file
@@ -76,7 +76,7 @@ by this content
 identifier:
 
 ``` r
-local_copy <- retrieve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
+local_copy <- retrieve("hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5")
 ```
 
 And here it is:
@@ -129,7 +129,7 @@ locations.
 url <- paste0("https://github.com/boettiger-lab/data-tracker/raw/master/",
                 fs::path_rel(retrieve(id), "."))
 
-id2 <- contenturi::register(url)
+id2 <- contentid::register(url)
 ```
 
 Registering content also returns the content-identifier. Note that
@@ -150,9 +150,9 @@ content identifier (this the same as doing the `sha256sum` outside of
 R):
 
 ``` r
-co2_file <- resolve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
-content_uri(co2_file)
-#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
+co2_file <- resolve("hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5")
+content_id(co2_file)
+#> [1] "hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5"
 ```
 
 What if it is not available in the local store? Let’s delete the file it
@@ -164,10 +164,10 @@ registered URLs before failing:
 
 ``` r
 fs::file_delete(co2_file)
-co2_file <- resolve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
+co2_file <- resolve("hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5")
 
-content_uri(co2_file)
-#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
+content_id(co2_file)
+#> [1] "hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5"
 ```
 
 If we wanted more assurance, we could upload this same file elsewhere on
@@ -195,13 +195,12 @@ can confirm this by querying against <https://hash-archive.org> registry
 explicitly:
 
 ``` r
-query("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9",
+query("hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5",
       registries = "https://hash-archive.org")
-#> # A tibble: 2 x 3
-#>   identifier                     source                      date               
-#>   <chr>                          <chr>                       <dttm>             
-#> 1 hash://sha256/1dec4592238cb66… https://archive.softwarehe… 2020-03-05 06:34:33
-#> 2 hash://sha256/1dec4592238cb66… https://github.com/boettig… 2020-03-05 03:35:51
+#> # A tibble: 1 x 2
+#>   source                                                     date               
+#>   <chr>                                                      <dttm>             
+#> 1 https://github.com/boettiger-lab/data-tracker/raw/master/… 2020-03-31 17:44:23
 ```
 
 Note that `query()` just returns the registry information, it hasn’t
@@ -211,7 +210,7 @@ downoaded the data from the registered URL. `query()` `register()` and
 local path or the URL of such a registry to `registeries` argument we
 can restrict any of these functions to use just the registries
 indicated. Thanks to this public registry, any user should be able to
-now access this data file by using the `contenturi::resolve()` function
+now access this data file by using the `contentid::resolve()` function
 on the content identifier, without any need to `store()` or `register()`
 the data from their own machine first.
 
@@ -223,32 +222,8 @@ tables. Better yet, because the content identifier can be reproducibly
 generated from the content (and only from the content – sha sums are
 cryptographic hashes) using a fast, standard, and popular algorithm, we
 need not rely on the adoption of a specific protocol and a specific
-software product (like `git`, `dat`, or `IPFS`) to make this work. For
-example, the Software Heritage Project has just completed a snapshot of
-all public data on GitHub and many other open source code repositories,
-and [exposes an
-API](https://docs.softwareheritage.org/devel/swh-web/uri-scheme-browse-content.html)
-that can query for any content by these same sha256 hashes. We can also
-ping the API to snapshot our repository. Notably, SoftwareHeritage goes
-beyond the approach taken by hash-archive.org, because it stores (and
-returns) a archive copy of all the content it indexes.
-
-For example, here is a Software Heritage API request for the same
-content we have been using:
+software product (like `git`, `dat`, or `IPFS`) to make this work.
 
 ``` r
-swh_url <-
-"https://archive.softwareheritage.org/browse/content/sha256:1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9/raw/"
-
-## prove this is the same content
-content_uri(swh_url)
-#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
-```
-
-So just for fun (and redundant storage), let’s go register this address
-to \<hash-archive.org\> as well:
-
-``` r
-register(swh_url)
-#> [1] "hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9"
+Sys.unsetenv("CONTENTID_HOME")
 ```

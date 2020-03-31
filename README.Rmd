@@ -36,7 +36,7 @@ We want an automated job that:
 
 ## Approach
 
-Rather than using DOIs for this identifier, we will use simple content hash sums as identifiers, as proposed by Ben Trask, Jorrit Poelen, and others.  (Note that approach is different than that of `git`, `dat`, `IPFS` and other content-based systems in that it's way simpler -- no special software or complex protocol which generates "salted" hashes.  Our identifier is just the `sha256sum` of the raw data files.  A few simple helper utilities for doing this in R are provided in the experimental R package, [contenturi](https://github.com/cboettig/contenturi).  
+Rather than using DOIs for this identifier, we will use simple content hash sums as identifiers, as proposed by Ben Trask, Jorrit Poelen, and others.  (Note that approach is different than that of `git`, `dat`, `IPFS` and other content-based systems in that it's way simpler -- no special software or complex protocol which generates "salted" hashes.  Our identifier is just the `sha256sum` of the raw data files.  A few simple helper utilities for doing this in R are provided in the experimental R package, [contentid](https://github.com/cboettig/contentid).  
 
 ## Automated Example Pipeline
 
@@ -48,14 +48,14 @@ store the content found at a URL of a possibly dynamic data resource.
 
 
 ```{r}
-library(contenturi) # remotes::install_github("cboettig/contenturi")
+library(contentid) # remotes::install_github("cboettig/contentid")
 ```
 
 
 First, we store a snapshot of the data to the local `store/` directory.  
 
 ```{r}
-Sys.setenv("CONTENTURI_HOME" = "store/")
+Sys.setenv("CONTENTID_HOME" = "store/")
 id <- store("ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_weekly_mlo.txt")
 id
 ```
@@ -63,7 +63,7 @@ id
 This is enough for local use. We can now access this specific data file by this content identifier:
 
 ```{r}
-local_copy <- retrieve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
+local_copy <- retrieve("hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5")
 
 ```
 
@@ -106,7 +106,7 @@ To allow our content identifier to act the same way, we create an entry in a 'co
 url <- paste0("https://github.com/boettiger-lab/data-tracker/raw/master/",
                 fs::path_rel(retrieve(id), "."))
 
-id2 <- contenturi::register(url)
+id2 <- contentid::register(url)
 ```
 
 Registering content also returns the content-identifier.  Note that because the content at this URL is identical
@@ -121,8 +121,8 @@ Now that our data is in the registry, we can resolve the identifier.  Whereas `r
 
 
 ```{r}
-co2_file <- resolve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
-content_uri(co2_file)
+co2_file <- resolve("hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5")
+content_id(co2_file)
 ```
 
 
@@ -131,9 +131,9 @@ What if it is not available in the local store?  Let's delete the file it just f
 
 ```{r}
 fs::file_delete(co2_file)
-co2_file <- resolve("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9")
+co2_file <- resolve("hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5")
 
-content_uri(co2_file)
+content_id(co2_file)
 
 ```
 
@@ -151,28 +151,16 @@ Fortunately, such things already exist.  A public registry acts like the central
 
 
 ```{r}
-query("hash://sha256/1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9",
+query("hash://sha256/b96d0bc074afbaabcb0771a3be54b78416952583a437c37c1a963ff64d5863c5",
       registries = "https://hash-archive.org")
 ```
 
-Note that `query()` just returns the registry information, it hasn't downoaded the data from the registered URL. `query()` `register()` and `resolve()` similarly all work across both a local registry and the <https://hash-archive.org> registry by default.  By passing either a local path or the URL of such a registry to `registeries` argument we can restrict any of these functions to use just the registries indicated. Thanks to this public registry, any user should be able to now access this data file by using the `contenturi::resolve()` function on the content identifier, without any need to `store()` or `register()` the data from their own machine first.
+Note that `query()` just returns the registry information, it hasn't downoaded the data from the registered URL. `query()` `register()` and `resolve()` similarly all work across both a local registry and the <https://hash-archive.org> registry by default.  By passing either a local path or the URL of such a registry to `registeries` argument we can restrict any of these functions to use just the registries indicated. Thanks to this public registry, any user should be able to now access this data file by using the `contentid::resolve()` function on the content identifier, without any need to `store()` or `register()` the data from their own machine first.
 
-Of course this also makes <https://hash-archive.org> a weak point of the system.  However, the real magic of this approach is that we are not tied to a single central server.  These functions can work across an arbitrary number of public registries, where registries are just simple look-up tables.  Better yet, because the content identifier can be reproducibly generated from the content (and only from the content -- sha sums are cryptographic hashes) using a fast, standard, and popular algorithm, we need not rely on the adoption of a specific protocol and a specific software product (like `git`, `dat`, or `IPFS`) to make this work.  For example, the Software Heritage Project has just completed a snapshot of all public data on GitHub and many other open source code repositories, and [exposes an API](https://docs.softwareheritage.org/devel/swh-web/uri-scheme-browse-content.html) that can query for any content by these same sha256 hashes.  We can also ping the API to snapshot our repository.  Notably, SoftwareHeritage goes beyond the approach taken by hash-archive.org, because it stores (and returns) a archive copy of all the content it indexes.  
+Of course this also makes <https://hash-archive.org> a weak point of the system.  However, the real magic of this approach is that we are not tied to a single central server.  These functions can work across an arbitrary number of public registries, where registries are just simple look-up tables.  Better yet, because the content identifier can be reproducibly generated from the content (and only from the content -- sha sums are cryptographic hashes) using a fast, standard, and popular algorithm, we need not rely on the adoption of a specific protocol and a specific software product (like `git`, `dat`, or `IPFS`) to make this work. 
 
-For example, here is a Software Heritage API request for the same content we have been using:
-
-```{r}
-swh_url <-
-"https://archive.softwareheritage.org/browse/content/sha256:1dec4592238cb662f2afae13a8d49cb2caf90967e3b362e5cf868c3773db64f9/raw/"
-
-## prove this is the same content
-content_uri(swh_url)
-```
-
-So just for fun (and redundant storage), let's go register this address to <hash-archive.org> as well:
 
 ```{r}
-register(swh_url)
+Sys.unsetenv("CONTENTID_HOME")
 ```
-
 
